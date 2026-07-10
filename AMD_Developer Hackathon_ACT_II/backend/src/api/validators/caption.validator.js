@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-/**
- * Caption styles enum.
- */
 export const captionStyles = [
   "formal",
   "sarcastic",
@@ -12,14 +9,19 @@ export const captionStyles = [
 
 /**
  * Schema for POST /api/v1/caption body.
- * Accepts a URL or a file upload (multipart handled separately).
+ * Supports either a single videoUrl or an array of videoUrls.
  */
 export const createCaptionSchema = z.object({
-  body: z.object({
-    videoUrl: z.string().url().optional(),
-    duration: z.union([z.string(), z.number()]).optional(),
-    styles: z.array(z.enum(captionStyles)).optional().default(["formal"]),
-  }),
+  body: z
+    .object({
+      videoUrl: z.string().url().optional(),
+      videoUrls: z.array(z.string().url()).optional(),
+      duration: z.union([z.string(), z.number()]).optional(),
+      styles: z.array(z.enum(captionStyles)).optional().default(["formal"]),
+    })
+    .refine((data) => data.videoUrl || data.videoUrls, {
+      message: "Either videoUrl or videoUrls must be provided",
+    }),
 });
 
 /**

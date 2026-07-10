@@ -17,15 +17,15 @@ import {
   Download,
   RotateCcw,
   Zap,
+  Plus,
+  X,
 } from "lucide-react";
-
 import { Link } from "react-router-dom";
-
 import { API_ENDPOINTS } from "../config/api";
 
 /**
- * The main Agent screen for video captioning.
- * Neo-brutalist design: thick borders, hard shadows, Space Grotesk, halftone backgrounds, sticker layering.
+ * The main Agent screen for video captioning – now supports multiple video URLs.
+ * Neo-brutalist design preserved.
  */
 
 // Simulated agentic steps matching the backend pipeline
@@ -56,13 +56,14 @@ const CAPTION_STYLES = [
 ];
 
 export default function Agent() {
-  const [videoUrl, setVideoUrl] = useState("");
+  // Multi‑URL state – a textarea allows one URL per line
+  const [urlsText, setUrlsText] = useState("");
   const [selectedStyles, setSelectedStyles] = useState(["formal", "sarcastic"]);
-  const [duration, setDuration] = useState("");
+  const [duration, setDuration] = useState(""); // kept for compatibility, though not used per‑video
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState(null);
+  const [results, setResults] = useState(null); // now an array of { videoUrl, results | error }
   const [error, setError] = useState(null);
-  const [activeStepIndex, setActiveStepIndex] = useState(-1); // for visual flow
+  const [activeStepIndex, setActiveStepIndex] = useState(-1);
   const flowTimer = useRef(null);
 
   const handleStyleToggle = (style) => {
@@ -72,7 +73,6 @@ export default function Agent() {
   };
 
   const startStepAnimation = () => {
-    // Advance through steps sequentially to simulate the agentic flow
     let i = 0;
     setActiveStepIndex(0);
     flowTimer.current = setInterval(() => {
@@ -83,12 +83,20 @@ export default function Agent() {
         return;
       }
       setActiveStepIndex(i);
-    }, 500); // each step ~0.5s, roughly matches 4-5s processing time
+    }, 500);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!videoUrl.trim()) return alert("Please enter a video URL.");
+
+    // Parse URLs from textarea (one per line, trim, filter empty)
+    const parsedUrls = urlsText
+      .split(/\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    if (parsedUrls.length === 0)
+      return alert("Please enter at least one video URL.");
     if (selectedStyles.length === 0)
       return alert("Select at least one caption style.");
 
@@ -98,7 +106,7 @@ export default function Agent() {
     startStepAnimation();
 
     const payload = {
-      videoUrl: videoUrl.trim(),
+      videoUrls: parsedUrls,
       styles: selectedStyles,
       ...(duration && { duration: parseInt(duration, 10) || 60 }),
     };
@@ -111,12 +119,14 @@ export default function Agent() {
       });
       const data = await res.json();
       clearInterval(flowTimer.current);
+
       if (data.status === "success") {
+        // data.data.results is an array of { videoUrl, results | error }
         setResults(data.data.results);
-        setActiveStepIndex(AGENT_STEPS.length - 1); // all steps done
+        setActiveStepIndex(AGENT_STEPS.length - 1);
       } else {
         setError(data.message || "Captioning failed");
-        setActiveStepIndex(-1); // hide flow
+        setActiveStepIndex(-1);
       }
     } catch (err) {
       clearInterval(flowTimer.current);
@@ -136,20 +146,26 @@ export default function Agent() {
     setResults(null);
     setError(null);
     setActiveStepIndex(-1);
-    setVideoUrl("");
+    setUrlsText("");
     setSelectedStyles(["formal", "sarcastic"]);
     setDuration("");
   };
 
+  // Helper: count total videos processed successfully
+  const totalVideos = results ? results.length : 0;
+  const successfulVideos = results
+    ? results.filter((v) => v.results && !v.error).length
+    : 0;
+
   return (
     <div className="min-h-screen bg-[#FFFDF5] font-['Space_Grotesk',sans-serif]">
-      {/* Inject halftone pattern for specific backgrounds */}
+      {/* Inject halftone patterns */}
       <style>{`
         .dot-bg { background-image: radial-gradient(#000 1.5px, transparent 1.5px); background-size: 20px 20px; }
         .grid-bg { background-size: 40px 40px; background-image: linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px); }
       `}</style>
 
-      {/* ── Header (minimal, just logo) ── */}
+      {/* Header */}
       <header className="border-b-4 border-black bg-[#FFFDF5]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <Link
@@ -159,7 +175,7 @@ export default function Agent() {
             Caption<span className="text-[#FF6B6B]">AI</span>
           </Link>
           <Link
-            to={"/"}
+            to="/"
             className="border-4 border-black bg-white px-4 py-2 font-black text-sm uppercase shadow-[4px_4px_0px_0px_#000] rotate-1"
           >
             Dashboard
@@ -168,7 +184,7 @@ export default function Agent() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        {/* ── Input Section ── */}
+        {/* Input Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
           {/* Left: Form */}
           <div>
@@ -178,25 +194,30 @@ export default function Agent() {
             <h1 className="font-black text-4xl sm:text-5xl lg:text-6xl uppercase leading-none mb-8">
               Turn{" "}
               <span className="bg-[#C4B5FD] px-3 border-4 border-black inline-block rotate-1">
-                Video
+                Videos
               </span>{" "}
               into Captions
             </h1>
 
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Video URL Input */}
+              {/* Multi‑URL Textarea */}
               <div>
                 <label className="block font-black text-lg uppercase mb-2">
-                  Video URL <span className="text-[#FF6B6B]">*</span>
+                  Video URLs <span className="text-[#FF6B6B]">*</span>
                 </label>
-                <input
-                  type="url"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder="https://example.com/video.mp4"
-                  className="w-full h-16 px-4 border-4 border-black font-bold text-lg placeholder:text-black/40 bg-white focus:bg-[#FFD93D] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none focus:ring-0 transition-colors duration-100"
+                <textarea
+                  value={urlsText}
+                  onChange={(e) => setUrlsText(e.target.value)}
+                  placeholder={
+                    "https://example.com/video1.mp4\nhttps://example.com/video2.mp4\n…"
+                  }
+                  rows={4}
+                  className="w-full px-4 py-3 border-4 border-black font-bold text-lg placeholder:text-black/40 bg-white focus:bg-[#FFD93D] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none focus:ring-0 transition-colors duration-100"
                   required
                 />
+                <p className="mt-1 font-bold text-sm">
+                  One URL per line. Paste as many as you like!
+                </p>
               </div>
 
               {/* Duration (optional) */}
@@ -262,7 +283,7 @@ export default function Agent() {
             </form>
           </div>
 
-          {/* Right: Decorative chaos or Agent Flow Visualization */}
+          {/* Right: Agentic Flow or Decor */}
           <div className="relative min-h-[400px]">
             {loading || activeStepIndex >= 0 ? (
               <div className="p-6 bg-white border-4 border-black shadow-[12px_12px_0px_0px_#000] rotate-1">
@@ -329,7 +350,7 @@ export default function Agent() {
           </div>
         </div>
 
-        {/* ── Error Alert ── */}
+        {/* Error Alert */}
         {error && (
           <div className="mb-16 p-6 border-4 border-black bg-[#FF6B6B] text-white font-bold text-xl shadow-[8px_8px_0px_0px_#000] flex items-center gap-4">
             <AlertTriangle className="w-10 h-10" strokeWidth={3} />
@@ -343,65 +364,94 @@ export default function Agent() {
           </div>
         )}
 
-        {/* ── Results Grid ── */}
+        {/* Results Section – now per video */}
         {results && (
           <section>
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
               <h2 className="font-black text-4xl sm:text-5xl uppercase leading-none">
                 Your{" "}
                 <span className="bg-[#FFD93D] px-3 border-4 border-black inline-block rotate-2">
                   Captions
                 </span>
               </h2>
-              <button
-                onClick={handleReset}
-                className="h-14 px-6 bg-white border-4 border-black font-black text-sm uppercase shadow-[6px_6px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-100 flex items-center gap-2"
-              >
-                <RefreshCw className="w-5 h-5" strokeWidth={3} /> New Video
-              </button>
+              <div className="flex items-center gap-3">
+                <span className="font-black text-lg uppercase border-4 border-black bg-white px-4 py-2 shadow-[4px_4px_0px_0px_#000]">
+                  {successfulVideos}/{totalVideos} videos
+                </span>
+                <button
+                  onClick={handleReset}
+                  className="h-14 px-6 bg-white border-4 border-black font-black text-sm uppercase shadow-[6px_6px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-100 flex items-center gap-2"
+                >
+                  <RefreshCw className="w-5 h-5" strokeWidth={3} /> New Batch
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {results.map((item, idx) => {
-                const styleConfig = STYLE_COLORS[item.style] || {
-                  bg: "#FFF",
-                  text: "black",
-                  emoji: "🎬",
-                };
-                return (
-                  <div
-                    key={idx}
-                    className="group relative p-8 bg-white border-4 border-black shadow-[12px_12px_0px_0px_#000] hover:-translate-y-2 hover:shadow-[16px_16px_0px_0px_#000] transition-all duration-200"
-                  >
-                    {/* Style Badge */}
-                    <div
-                      className="absolute -top-6 -right-6 border-4 border-black px-4 py-2 font-black text-sm uppercase shadow-[4px_4px_0px_0px_#000] rotate-3 z-10"
-                      style={{
-                        backgroundColor: styleConfig.bg,
-                        color: styleConfig.text,
-                      }}
-                    >
-                      {styleConfig.emoji} {item.style.replace("-", " ")}
-                    </div>
+            {/* Loop over each video result */}
+            {results.map((videoResult, videoIdx) => (
+              <div key={videoIdx} className="mb-16">
+                {/* Video URL header */}
+                <div className="border-4 border-black bg-white p-4 shadow-[8px_8px_0px_0px_#000] mb-6 rotate-0">
+                  <h3 className="font-black text-lg uppercase flex items-center gap-2 break-all">
+                    <Video className="w-6 h-6" strokeWidth={3} />
+                    <span className="truncate">{videoResult.videoUrl}</span>
+                  </h3>
+                </div>
 
-                    {/* Caption Text */}
-                    <p className="font-bold text-xl leading-relaxed mt-4 mb-6">
-                      {item.caption}
-                    </p>
-
-                    {/* Action buttons */}
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => handleCopy(item.caption)}
-                        className="h-12 px-4 border-4 border-black bg-[#FFD93D] font-black text-sm uppercase shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-100 flex items-center gap-2"
-                      >
-                        <Copy className="w-4 h-4" strokeWidth={3} /> Copy
-                      </button>
-                    </div>
+                {/* If error for this video */}
+                {videoResult.error && (
+                  <div className="p-6 border-4 border-black bg-[#FF6B6B] text-white font-bold text-lg shadow-[8px_8px_0px_0px_#000] mb-6 flex items-center gap-4">
+                    <AlertTriangle className="w-8 h-8" strokeWidth={3} />
+                    <span>{videoResult.error}</span>
                   </div>
-                );
-              })}
-            </div>
+                )}
+
+                {/* Captions grid for this video */}
+                {videoResult.results && videoResult.results.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {videoResult.results.map((item, idx) => {
+                      const styleConfig = STYLE_COLORS[item.style] || {
+                        bg: "#FFF",
+                        text: "black",
+                        emoji: "🎬",
+                      };
+                      return (
+                        <div
+                          key={idx}
+                          className="group relative p-8 bg-white border-4 border-black shadow-[12px_12px_0px_0px_#000] hover:-translate-y-2 hover:shadow-[16px_16px_0px_0px_#000] transition-all duration-200"
+                        >
+                          {/* Style Badge */}
+                          <div
+                            className="absolute -top-6 -right-6 border-4 border-black px-4 py-2 font-black text-sm uppercase shadow-[4px_4px_0px_0px_#000] rotate-3 z-10"
+                            style={{
+                              backgroundColor: styleConfig.bg,
+                              color: styleConfig.text,
+                            }}
+                          >
+                            {styleConfig.emoji} {item.style.replace("-", " ")}
+                          </div>
+
+                          {/* Caption Text */}
+                          <p className="font-bold text-xl leading-relaxed mt-4 mb-6">
+                            {item.caption}
+                          </p>
+
+                          {/* Action buttons */}
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => handleCopy(item.caption)}
+                              className="h-12 px-4 border-4 border-black bg-[#FFD93D] font-black text-sm uppercase shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-100 flex items-center gap-2"
+                            >
+                              <Copy className="w-4 h-4" strokeWidth={3} /> Copy
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
           </section>
         )}
       </main>
