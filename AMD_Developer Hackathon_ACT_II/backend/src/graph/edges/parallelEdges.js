@@ -1,36 +1,30 @@
-/**
- * Mapping from caption styles to their generator node names.
- */
-const STYLE_TO_NODE = {
-  formal: "generateFormal",
-  sarcastic: "generateSarcastic",
-  "humorous-tech": "generateHumorousTech",
-  "humorous-nontech": "generateHumorousNonTech",
-};
+import { Send } from "@langchain/langgraph";
 
 /**
- * After the analyzeContent node, return the generator nodes that should be
- * executed in parallel, based on the requested caption styles.
+ * Build an array of Send objects to fan out to the requested caption generators.
+ * Each Send receives a copy of the current state, so nodes write to distinct channels.
  *
  * @param {import('../../types/caption.types.js').GraphState} state
- * @returns {string[]} Array of node names to fan out to
+ * @returns {Send[]}
  */
 export function getParallelGenerators(state) {
-  // Default to all styles if none specified
-  const requestedStyles =
+  const sends = [];
+  const styles =
     state.styles && state.styles.length > 0
       ? state.styles
       : ["formal", "sarcastic", "humorous-tech", "humorous-nontech"];
 
-  return requestedStyles.map((style) => STYLE_TO_NODE[style]).filter(Boolean);
+  if (styles.includes("formal")) {
+    sends.push(new Send("generateFormal", state));
+  }
+  if (styles.includes("sarcastic")) {
+    sends.push(new Send("generateSarcastic", state));
+  }
+  if (styles.includes("humorous-tech")) {
+    sends.push(new Send("generateHumorousTech", state));
+  }
+  if (styles.includes("humorous-nontech")) {
+    sends.push(new Send("generateHumorousNonTech", state));
+  }
+  return sends;
 }
-
-/**
- * Static list of all four generator nodes (used if dynamic filtering is not needed).
- */
-export const ALL_GENERATOR_NODES = [
-  "generateFormal",
-  "generateSarcastic",
-  "generateHumorousTech",
-  "generateHumorousNonTech",
-];

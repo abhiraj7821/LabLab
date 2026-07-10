@@ -76,12 +76,8 @@ export function buildCaptionGraph(options = {}) {
   graph.addEdge("analyzeVisual", "analyzeContent");
 
   // Fan-out from analyzeContent to generator nodes
-  graph.addConditionalEdges("analyzeContent", getParallelGenerators, {
-    generateFormal: "generateFormal",
-    generateSarcastic: "generateSarcastic",
-    generateHumorousTech: "generateHumorousTech",
-    generateHumorousNonTech: "generateHumorousNonTech",
-  });
+  // Fan-out using Send objects (parallel dispatch)
+  graph.addConditionalEdges("analyzeContent", getParallelGenerators);
 
   // All generators converge to aggregator
   graph.addEdge("generateFormal", "aggregateResults");

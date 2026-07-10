@@ -13,13 +13,9 @@ export async function generateHumorousNonTech(state) {
       humanMessage,
       variables: { content: state.contentSummary },
     });
-    return { ...state, humorousNonTechCaption: caption, status: "generating" };
+    return { humorousNonTechCaption: caption };
   } catch (err) {
     logger.error({ err }, "Humorous‑non‑tech caption failed");
-    return {
-      ...state,
-      error: `Humorous‑non‑tech caption failed: ${err.message}`,
-      status: "failed",
-    };
+    return { humorousNonTechCaption: null };
   }
 }
