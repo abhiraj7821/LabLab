@@ -1,17 +1,21 @@
-import { analyzeImageWithGemini } from "../../services/llm.service.js";
+import { analyzeImageWithAnthropic } from "../../services/llm.service.js";
 import logger from "../../utils/logger.js";
 import { AppError } from "../../utils/errors.js";
 
 /**
- * Describe a single frame using Gemini 2.5 Flash (vision).
+ * Describe a single frame using Anthropic's Claude Sonnet 5 (vision
+ * capable). Sonnet is the mid-tier model — a cost/quality balance between
+ * cheaper Haiku and pricier Opus. Override via config.anthropicVisionModel
+ * (see llm.service.js) if you need to change tiers.
+ *
  * @param {string} imagePath - Path to the frame image
  * @returns {Promise<string>} Textual description
  */
 export async function analyzeVisual(imagePath) {
-  logger.info({ imagePath }, "Analyzing frame with Gemini");
+  logger.info({ imagePath }, "Analyzing frame with Anthropic");
 
   try {
-    const description = await analyzeImageWithGemini(imagePath);
+    const description = await analyzeImageWithAnthropic(imagePath);
     return description;
   } catch (error) {
     logger.error({ err: error, imagePath }, "Visual analysis failed");

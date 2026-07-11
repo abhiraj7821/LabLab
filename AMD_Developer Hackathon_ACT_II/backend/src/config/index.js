@@ -37,6 +37,7 @@ const config = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
   groqApiKey: process.env.GROQ_API_KEY,
   geminiApiKey: process.env.GEMINI_API_KEY,
+  fireworksApiKey: process.env.FIREWORKS_API_KEY,
 
   // Whisper
   whisperModelPath: process.env.WHISPER_MODEL_PATH || "",

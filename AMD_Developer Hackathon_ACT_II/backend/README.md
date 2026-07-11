@@ -1,266 +1,153 @@
-# 🎬 Video Captioning Agent
+# Frontend – Video Captioning Agent (Neo-Brutalist UI)
 
-An intelligent multi-agent system built with **LangGraph**, **LangChain**, and **Express.js** that automatically generates creative captions for videos in multiple styles using LLMs and vision models.
-
----
-
-## 🧠 Agentic Architecture
-
-This project implements a **stateful agent graph** where multiple specialized agents (nodes) collaborate in a directed workflow to process videos and generate captions.
-
-### The Agent Team
-
-### How Agents Work Together
-
-#### 1. **Validator Agent** (`validateInput.node.js`)
-
-- **Role**: Gatekeeper
-- **Task**: Validates video URL format and duration constraints (30-120 seconds)
-- **Decision**: Routes to Downloader or Error Handler
-
-#### 2. **Downloader Agent** (`fetchVideo.tool.js`)
-
-- **Role**: Content Acquisition
-- **Task**: Downloads video from URL to local storage
-- **Output**: Local file path of the video
-
-#### 3. **Audio Extractor Agent** (`extractAudio.node.js`)
-
-- **Role**: Audio Processing
-- **Task**: Extracts audio track from video using FFmpeg
-- **Smart**: Gracefully handles videos without audio streams
-
-#### 4. **Parallel Processing (Dual Agents)**
-
-**a) Frame Extractor Agent** (`extractFrames.tool.js`)
-
-- Extracts keyframes every 5 seconds using FFmpeg
-- Creates image snapshots for visual analysis
-
-**b) Transcription Agent** (`transcribeAudio.tool.js`)
-
-- Converts speech to text using OpenAI Whisper
-- Handles mute videos gracefully
-
-#### 5. **Vision Analyzer Agent** (`analyzeVisual.node.js`)
-
-- **Model**: Gemini 2.5 Flash (vision-capable)
-- **Task**: Describes each keyframe - people, actions, objects, mood
-- **Output**: Textual descriptions of visual scenes
-
-#### 6. **Content Merger Agent** (`analyzeContent.node.js`)
-
-- **Role**: Context Aggregation
-- **Task**: Combines transcript + visual descriptions into unified context
-- **Output**: Rich content summary for caption generation
-
-#### 7. **Caption Generator Agents** (Parallel)
-
-All four run simultaneously for maximum speed:
-
-| Agent                     | Style         | Model                | Tone                          |
-| ------------------------- | ------------- | -------------------- | ----------------------------- |
-| `generateFormal`          | Professional  | Groq (LLaMA 3.3 70B) | Formal, grammatically correct |
-| `generateSarcastic`       | Witty         | Groq (LLaMA 3.3 70B) | Sarcastic, clever mockery     |
-| `generateHumorousTech`    | Tech Humor    | Groq (LLaMA 3.3 70B) | Programming/IT jokes          |
-| `generateHumorousNonTech` | General Humor | Groq (LLaMA 3.3 70B) | Light-hearted, non-technical  |
-
-#### 8. **Aggregator Agent** (`aggregateResults.node.js`)
-
-- **Role**: Collector
-- **Task**: Gathers all generated captions into structured results
-- **Filter**: Only includes non-null captions
-
-#### 9. **Quality Checker Agent** (`qualityCheck.node.js`)
-
-- **Role**: Gatekeeper
-- **Task**: Validates caption length (10-1000 characters) and content
-- **Decision**: Routes to success output or error handler
-
-#### 10. **Error Handler Agent** (`handleError.node.js`)
-
-- **Role**: Safety Net
-- **Task**: Gracefully handles failures, logs errors
-- **Fallback**: Can be extended with retry logic
+A **Vite + React** application that provides a bold, neo-brutalist interface for the multi‑agent video captioning system. Users can input multiple video URLs, select caption styles, and view AI‑generated captions in a playful, sticker‑like layout.
 
 ---
 
-## 🚀 Quick Start Guide
+## 🎨 Design Philosophy
+
+This frontend follows the **neo‑brutalist** aesthetic:
+
+- Thick `4px` black borders on every element
+- Hard offset shadows with zero blur
+- Vibrant highlighter palette (Hot Red, Vivid Yellow, Soft Violet)
+- Bold **Space Grotesk** typography (weights 700 & 900 only)
+- Mechanical interactions: buttons press down, cards lift up, stickers rotate
+- Halftone dot and grid textures for depth
+
+---
+
+## 🚀 Features
+
+- **Landing Page** – introduces the product with playful animated elements
+- **Agent Page** – the core workspace where you:
+  - Paste multiple video URLs (one per line)
+  - Choose caption styles (formal, sarcastic, tech‑humor, non‑tech humor)
+  - Set an optional video duration
+- **Live Agentic Flow** – visual step‑by‑step pipeline animation while processing
+- **Multi‑Video Results** – results grouped per video, each with its own set of styled caption cards
+- **Copy to Clipboard** – quick copy button on every caption
+- **Fully Responsive** – adapts from desktop chaos to mobile order while keeping the neo‑brutalist identity
+
+---
+
+## 🧱 Tech Stack
+
+| Category    | Technology                   |
+| ----------- | ---------------------------- |
+| Framework   | React 18 + Vite              |
+| Styling     | Tailwind CSS                 |
+| Icons       | Lucide React                 |
+| Routing     | React Router DOM             |
+| HTTP Client | Fetch API                    |
+| Font        | Space Grotesk (Google Fonts) |
+
+---
+
+## 📁 Project Structure (frontend/src)
+
+```
+src/
+├── assets/              # (optional images/illustrations)
+├── components/          # (shared UI components if added later)
+├── config/
+│   └── api.js           # API base URL & endpoint definitions
+├── pages/
+│   ├── LandingPage.js   # Marketing/landing page
+│   └── Agent.js         # Main agent workspace
+├── App.jsx              # Route definitions
+├── main.jsx             # Vite entry point
+└── index.css            # Tailwind directives & global styles
+```
+
+---
+
+## ⚙️ Getting Started
 
 ### Prerequisites
 
+- **Node.js** ≥ 18
+- **npm** or **yarn**
+- The [backend server](https://github.com/your-org/video-captioning-backend) must be running on `http://localhost:3000` (or your configured `VITE_API_BASE_URL`)
+
+### Installation
+
 ```bash
-# Install FFmpeg
-# macOS
-brew install ffmpeg
-
-# Ubuntu/Debian
-sudo apt install ffmpeg
-
-# Windows (Chocolatey)
-choco install ffmpeg
-
-Installation
-
 # Clone the repository
-git clone <your-repo-url>
-cd video-captioning-backend
+git clone <your-frontend-repo-url>
+cd video-captioning-frontend
 
 # Install dependencies
 npm install
-
-
-Configuration
-Create .env file from the example:
-cp .env.example .env
-
-Add your API keys to .env:
-# Required
-GROQ_API_KEY=gsk_your_groq_api_key_here
-GEMINI_API_KEY=your_gemini_api_key_here
-OPENAI_API_KEY=sk-your_openai_key_here
-
-# Optional
-PORT=3000
-NODE_ENV=development
-
-Run the Server
-
-# Development mode with auto-reload
-npm run dev
-
-# Production mode
-npm start
-
-Test the API
-
-
-# POST a video URL for captioning
-curl -X POST http://localhost:3000/api/v1/caption \
-  -H "Content-Type: application/json" \
-  -d '{
-    "videoUrl": "https://storage.googleapis.com/amd-hackathon-clips/1860079-uhd_2560_1440_25fps.mp4",
-    "styles": ["formal", "sarcastic"],
-    "duration": 60
-  }'
-
-
-  Expected Response
-{
-  {
-  "status": "success",
-  "data": {
-    "results": [
-      {
-        "style": "formal",
-        "caption": "A professional formal caption describing the video content..."
-      },
-      {
-        "style": "sarcastic",
-        "caption": "A witty sarcastic take on the video content..."
-      }
-    ]
-  }
-}
-
-Available Routes
-Method	Endpoint	Description
-POST	/api/v1/caption	Submit video for captioning
-GET	/api/v1/caption/:id	Get job status & results
-GET	/health	Health check
-
-
-
-Testing
-
-
-# Run all tests
-npm test
-
-# Run graph integration test (mocked)
-node test-graph.js
-
-🏗️ Project Structure
-
-video-captioning-backend/
-├── src/
-│   ├── api/              # Express.js API layer
-│   │   ├── controllers/  # Request handlers
-│   │   ├── middleware/   # Auth, validation, rate limiting
-│   │   ├── routes/       # Route definitions
-│   │   └── validators/   # Request schemas
-│   ├── config/           # Environment configuration
-│   ├── graph/            # LangGraph agent system
-│   │   ├── nodes/        # Agent implementations
-│   │   ├── edges/        # Routing logic
-│   │   └── tools/        # External integrations
-│   ├── services/         # Business logic
-│   ├── types/            # JSDoc type definitions
-│   └── utils/            # Helpers & utilities
-├── tests/                # Test suites
-├── temp/                 # Runtime storage
-└── scripts/              # Maintenance scripts
-
-
-🔧 Tech Stack
-Backend: Node.js, Express.js
-
-Agent Framework: LangGraph (Stateful multi-agent orchestration)
-
-LLM Integration: LangChain
-
-Text Generation: Groq (LLaMA 3.3 70B Versatile)
-
-Visual Analysis: Google Gemini 2.5 Flash
-
-Speech-to-Text: OpenAI Whisper
-
-Video Processing: FFmpeg
-
-Queue System: BullMQ + Redis
-
-Validation: Zod
-
-Logging: Pino
-
-🎯 Key Features
-Multi-Style Captions: Generate formal, sarcastic, and humorous captions
-
-Parallel Processing: 4 caption styles generated simultaneously
-
-Visual Understanding: Frame extraction + vision model analysis
-
-Audio Transcription: Automatic speech-to-text conversion
-
-Quality Assurance: Automatic validation of generated captions
-
-Error Resilience: Graceful handling of edge cases
-
-Stateful Workflow: LangGraph maintains context across all agents
-
-REST API: Simple integration with any frontend
-
-🤖 How the Agent Graph Works
-State Management: A shared state object flows through all agents
-
-Conditional Routing: Decisions based on state determine the next agent
-
-Parallel Execution: Independent agents run concurrently for speed
-
-Error Recovery: Failed agents redirect to error handler
-
-Deterministic Flow: Same input always produces the same processing path
-
-📝 License
-MIT
-
-👤 Author
-Abhishek Rajput
-
-🙏 Acknowledgments
-LangChain & LangGraph teams for the agent orchestration framework
-Groq for fast LLM inference
-Google for Gemini vision capabilities
-OpenAI for Whisper transcription
-Happy Captioning! 🎬✨
 ```
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+VITE_API_BASE_URL=http://localhost:3000
+VITE_API_VERSION=v1
+```
+
+### Run Development Server
+
+```bash
+npm run dev
+```
+
+The app opens at **`http://localhost:5173`** by default.
+
+---
+
+## 🔌 Connecting to the Backend
+
+All API calls are made through the `API_ENDPOINTS` object defined in `src/config/api.js`.  
+The `Agent.js` page sends a `POST` request to `/api/v1/caption` with either a single `videoUrl` or an array of `videoUrls`.  
+The backend returns caption results grouped by video URL, which the frontend displays with colour‑coded style badges and copy buttons.
+
+---
+
+## 🏗️ Building for Production
+
+```bash
+npm run build
+```
+
+The output goes into the `dist/` folder, ready to be served by any static server or deployed to Vercel/Netlify.
+
+---
+
+## 🧩 Design System & Customisation
+
+All neo‑brutalist tokens are kept as Tailwind arbitrary values (`border-4 border-black`, `shadow-[8px_8px_0px_0px_#000]`, etc.) directly in components.  
+To customise colours or spacing, edit the utility classes or add Tailwind config extensions.  
+Be careful not to introduce:
+
+- Soft shadows (`shadow-lg`, `shadow-md`)
+- Rounded corners (`rounded-lg`, `rounded-xl`)
+- Grey text (`text-gray-500`)
+- Gradient backgrounds
+- Slow transitions – keep them fast (`duration-100`, `duration-200`)
+
+---
+
+## 📄 Available Scripts
+
+| Script            | Description                   |
+| ----------------- | ----------------------------- |
+| `npm run dev`     | Start Vite development server |
+| `npm run build`   | Build for production          |
+| `npm run preview` | Preview the production build  |
+
+---
+
+## 👤 Author
+
+**Abhishek Rajput**
+
+---
+
+## 📝 License
+
+MIT
