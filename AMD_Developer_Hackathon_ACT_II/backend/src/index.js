@@ -3,9 +3,16 @@ import config from "./config/index.js";
 import { createApp } from "./api/server.js";
 import logger from "./utils/logger.js";
 
-// Create all required temp directories
-[config.uploadDir, config.audioDir, config.framesDir].forEach((dir) => {
+// Force production‑safe directories on Vercel
+const isProduction = process.env.NODE_ENV === "production";
+const uploadDir = isProduction ? "/tmp/uploads" : config.uploadDir;
+const audioDir = isProduction ? "/tmp/audio" : config.audioDir;
+const framesDir = isProduction ? "/tmp/frames" : config.framesDir;
+
+// Create directories (recursive, no error if they already exist)
+[uploadDir, audioDir, framesDir].forEach((dir) => {
   fs.mkdirSync(dir, { recursive: true });
+  logger.info(`Ensured directory: ${dir}`);
 });
 
 const app = createApp();
