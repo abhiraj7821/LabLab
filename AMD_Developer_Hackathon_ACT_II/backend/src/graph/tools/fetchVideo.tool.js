@@ -7,6 +7,9 @@ import logger from "../../utils/logger.js";
 import { AppError } from "../../utils/errors.js";
 import { isSupportedVideoFormat } from "../../utils/helpers.js";
 
+const tempDir = config.uploadDir;
+await fs.promises.mkdir(tempDir, { recursive: true });
+
 /**
  * Download video from URL and save to temp storage.
  * @param {object} state - Graph state

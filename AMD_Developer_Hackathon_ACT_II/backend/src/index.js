@@ -1,3 +1,4 @@
+import fs from "fs/promises";
 import { createApp } from "./api/server.js";
 import config from "./config/index.js";
 import logger from "./utils/logger.js";
@@ -6,6 +7,10 @@ import { cleanTempFiles } from "./services/storage.service.js"; // optional clea
 // ── Optional: Connect to database, initialize queues, etc. ────────────
 // import mongoose from 'mongoose';
 // await mongoose.connect(config.mongodbUri);
+
+await fs.mkdir(config.uploadDir, { recursive: true });
+await fs.mkdir(config.audioDir, { recursive: true });
+await fs.mkdir(config.framesDir, { recursive: true });
 
 // ── Start server ──────────────────────────────────────────────────────
 const app = createApp();
