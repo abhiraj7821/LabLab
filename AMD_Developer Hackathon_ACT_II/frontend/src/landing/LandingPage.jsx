@@ -444,13 +444,21 @@ export default function LandingPage() {
               © 2026 CaptionAI. All rights reserved.
             </p>
             <div className="flex gap-4">
-              {["Twitter", "GitHub", "Discord"].map((s) => (
-                <div
-                  key={s}
+              {[
+                ["Twitter", "https://x.com/abhiraj7821i?s=11"],
+                [
+                  "GitHub",
+                  "https://github.com/abhiraj7821/LabLab/tree/main/AMD_Developer%20Hackathon_ACT_II",
+                ],
+                ["Instagram", "https://www.instagram.com/abhiraj.in_/"],
+              ].map((s, index) => (
+                <a
+                  href={s[1]}
+                  key={index}
                   className="border-4 border-black p-3 bg-white shadow-[4px_4px_0px_0px_#000] hover:bg-[#FFD93D] transition-colors duration-100 cursor-pointer"
                 >
-                  <span className="font-black text-sm uppercase">{s}</span>
-                </div>
+                  <span className="font-black text-sm uppercase">{s[0]}</span>
+                </a>
               ))}
             </div>
           </div>
