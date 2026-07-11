@@ -4,16 +4,40 @@ import path from "path";
 import fs from "fs/promises";
 import config from "../config/index.js";
 import logger from "./logger.js";
-import { AppError, ValidationError } from "./errors.js";
+import { AppError } from "../utils/errors.js";
 
 const execFileAsync = promisify(execFile);
+
+// Use static binaries when available (via npm packages), otherwise system default
+let ffmpegPath = "ffmpeg";
+let ffprobePath = "ffprobe";
+
+try {
+  const ffmpegStatic = (await import("ffmpeg-static")).default;
+  ffmpegPath = ffmpegStatic?.path || ffmpegPath;
+} catch {
+  /* static binary not available */
+}
+
+try {
+  const ffprobeStatic = (await import("ffprobe-static")).default;
+  ffprobePath = ffprobeStatic?.path || ffprobePath;
+} catch {
+  /* static binary not available */
+}
+
+// Allow overriding via environment variables
+if (config.ffmpegPath) ffmpegPath = config.ffmpegPath;
+if (config.ffprobePath) ffprobePath = config.ffprobePath;
+
+logger.info({ ffmpegPath, ffprobePath }, "FFmpeg binaries ready");
 
 /**
  * Get video duration in seconds using ffprobe.
  */
 export async function getVideoDuration(filePath) {
   try {
-    const { stdout } = await execFileAsync("ffprobe", [
+    const { stdout } = await execFileAsync(ffprobePath, [
       "-v",
       "error",
       "-show_entries",
@@ -23,9 +47,7 @@ export async function getVideoDuration(filePath) {
       filePath,
     ]);
     const duration = parseFloat(stdout.trim());
-    if (isNaN(duration))
-      throw new ValidationError("Could not parse video duration");
-    logger.debug({ duration, filePath }, "Video duration extracted");
+    if (isNaN(duration)) throw new Error("Could not parse duration");
     return duration;
   } catch (error) {
     logger.error({ err: error, filePath }, "Failed to get video duration");
@@ -34,14 +56,13 @@ export async function getVideoDuration(filePath) {
 }
 
 /**
- * Extract audio as 16kHz mono WAV.
- * Returns `null` if ffmpeg fails (e.g. no audio stream).
+ * Extract audio as 16kHz mono WAV. Returns `null` if ffmpeg fails (e.g., no audio stream).
  */
 export async function extractAudio(videoPath, outputPath) {
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
 
   try {
-    await execFileAsync("ffmpeg", [
+    await execFileAsync(ffmpegPath, [
       "-i",
       videoPath,
       "-vn",
@@ -56,7 +77,6 @@ export async function extractAudio(videoPath, outputPath) {
     logger.debug({ videoPath, outputPath }, "Audio extracted");
     return outputPath;
   } catch (error) {
-    // Video likely has no audio – not a fatal error
     logger.warn(
       { err: error, videoPath },
       "No audio stream – skipping audio extraction",
@@ -66,20 +86,20 @@ export async function extractAudio(videoPath, outputPath) {
 }
 
 /**
- * Extract keyframes (I-frames) every `intervalSec` seconds.
+ * Extract keyframes every `intervalSec` seconds.
  */
 export async function extractKeyframes(videoPath, outputDir, intervalSec = 5) {
   await fs.mkdir(outputDir, { recursive: true });
   const outputPattern = path.join(outputDir, "frame-%04d.jpg");
 
   try {
-    await execFileAsync("ffmpeg", [
+    await execFileAsync(ffmpegPath, [
       "-i",
       videoPath,
       "-vf",
       `fps=1/${intervalSec}`,
       "-fps_mode",
-      "vfr", // modern equivalent of -vsync
+      "vfr",
       "-q:v",
       "2",
       outputPattern,
