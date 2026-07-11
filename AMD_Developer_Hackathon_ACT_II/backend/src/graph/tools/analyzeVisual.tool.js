@@ -1,4 +1,7 @@
-import { analyzeImageWithGemini } from "../../services/llm.service.js";
+import {
+  analyzeImageWithAnthropic,
+  analyzeImageWithGemini,
+} from "../../services/llm.service.js";
 import logger from "../../utils/logger.js";
 import { AppError } from "../../utils/errors.js";
 
@@ -19,15 +22,17 @@ export async function analyzeVisual(imagePath) {
     throw new AppError(`Visual analysis failed: ${error.message}`, 500);
   }
 }
-/**
- * Describe a single frame using Anthropic's Claude Sonnet 5 (vision
- * capable). Sonnet is the mid-tier model — a cost/quality balance between
- * cheaper Haiku and pricier Opus. Override via config.anthropicVisionModel
- * (see llm.service.js) if you need to change tiers.
- *
- * @param {string} imagePath - Path to the frame image
- * @returns {Promise<string>} Textual description
- */
+
+// ANTHROPIC CODE:
+// /**
+//  * Describe a single frame using Anthropic's Claude Sonnet 5 (vision
+//  * capable). Sonnet is the mid-tier model — a cost/quality balance between
+//  * cheaper Haiku and pricier Opus. Override via config.anthropicVisionModel
+//  * (see llm.service.js) if you need to change tiers.
+//  *
+//  * @param {string} imagePath - Path to the frame image
+//  * @returns {Promise<string>} Textual description
+//  */
 // export async function analyzeVisual(imagePath) {
 //   logger.info({ imagePath }, "Analyzing frame with Anthropic");
 

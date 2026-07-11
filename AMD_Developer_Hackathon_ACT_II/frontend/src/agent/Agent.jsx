@@ -121,8 +121,10 @@ export default function Agent() {
       clearInterval(flowTimer.current);
 
       if (data.status === "success") {
-        // data.data.results is an array of { videoUrl, results | error }
-        setResults(data.data.results);
+        // Backend may return a single video object ({ videoUrl, results })
+        // or a batch array of such objects. Normalize to always be an array.
+        const videoResults = Array.isArray(data.data) ? data.data : [data.data];
+        setResults(videoResults);
         setActiveStepIndex(AGENT_STEPS.length - 1);
       } else {
         setError(data.message || "Captioning failed");
