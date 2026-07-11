@@ -6,35 +6,38 @@ import config from "../config/index.js";
 import logger from "./logger.js";
 import { AppError } from "../utils/errors.js";
 
-const execFileAsync = promisify(execFile);
-
-// Use static binaries when available (via npm packages), otherwise system default
+// ------------------------------------------------------------------
+// 1. Try to load the static binaries (bundled executables)
+// ------------------------------------------------------------------
 let ffmpegPath = "ffmpeg";
 let ffprobePath = "ffprobe";
 
 try {
+  // ffmpeg-static exports an object with a `path` property
   const ffmpegStatic = (await import("ffmpeg-static")).default;
-  ffmpegPath = ffmpegStatic?.path || ffmpegPath;
+  ffmpegPath = ffmpegStatic?.path ?? ffmpegPath;
+  logger.info({ ffmpegPath }, "Loaded static ffmpeg binary");
 } catch {
-  /* static binary not available */
+  logger.warn("ffmpeg-static not available, falling back to system ffmpeg");
 }
 
 try {
   const ffprobeStatic = (await import("ffprobe-static")).default;
-  ffprobePath = ffprobeStatic?.path || ffprobePath;
+  ffprobePath = ffprobeStatic?.path ?? ffprobePath;
+  logger.info({ ffprobePath }, "Loaded static ffprobe binary");
 } catch {
-  /* static binary not available */
+  logger.warn("ffprobe-static not available, falling back to system ffprobe");
 }
 
-// Allow overriding via environment variables
+// Allow overriding via environment variables (optional)
 if (config.ffmpegPath) ffmpegPath = config.ffmpegPath;
 if (config.ffprobePath) ffprobePath = config.ffprobePath;
 
-logger.info({ ffmpegPath, ffprobePath }, "FFmpeg binaries ready");
+const execFileAsync = promisify(execFile);
 
-/**
- * Get video duration in seconds using ffprobe.
- */
+// ------------------------------------------------------------------
+// 2. Exported functions (unchanged logic)
+// ------------------------------------------------------------------
 export async function getVideoDuration(filePath) {
   try {
     const { stdout } = await execFileAsync(ffprobePath, [
@@ -55,9 +58,6 @@ export async function getVideoDuration(filePath) {
   }
 }
 
-/**
- * Extract audio as 16kHz mono WAV. Returns `null` if ffmpeg fails (e.g., no audio stream).
- */
 export async function extractAudio(videoPath, outputPath) {
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
 
@@ -85,9 +85,6 @@ export async function extractAudio(videoPath, outputPath) {
   }
 }
 
-/**
- * Extract keyframes every `intervalSec` seconds.
- */
 export async function extractKeyframes(videoPath, outputDir, intervalSec = 5) {
   await fs.mkdir(outputDir, { recursive: true });
   const outputPattern = path.join(outputDir, "frame-%04d.jpg");
