@@ -7,26 +7,29 @@ import logger from "./logger.js";
 import { AppError } from "../utils/errors.js";
 
 // ------------------------------------------------------------------
-// 1. Try to load the static binaries (bundled executables)
+// 1. Reliable static binaries – always resolve to an absolute path
 // ------------------------------------------------------------------
 let ffmpegPath = "ffmpeg";
 let ffprobePath = "ffprobe";
 
 try {
-  // ffmpeg-static exports an object with a `path` property
-  const ffmpegStatic = (await import("ffmpeg-static")).default;
-  ffmpegPath = ffmpegStatic?.path ?? ffmpegPath;
-  logger.info({ ffmpegPath }, "Loaded static ffmpeg binary");
-} catch {
-  logger.warn("ffmpeg-static not available, falling back to system ffmpeg");
+  const ffmpegInstaller = (await import("@ffmpeg-installer/ffmpeg")).default;
+  ffmpegPath = ffmpegInstaller.path;
+  logger.info({ ffmpegPath }, "Using @ffmpeg-installer/ffmpeg");
+} catch (err) {
+  logger.warn(
+    "@ffmpeg-installer/ffmpeg not available, falling back to system ffmpeg",
+  );
 }
 
 try {
-  const ffprobeStatic = (await import("ffprobe-static")).default;
-  ffprobePath = ffprobeStatic?.path ?? ffprobePath;
-  logger.info({ ffprobePath }, "Loaded static ffprobe binary");
-} catch {
-  logger.warn("ffprobe-static not available, falling back to system ffprobe");
+  const ffprobeInstaller = (await import("@ffprobe-installer/ffprobe")).default;
+  ffprobePath = ffprobeInstaller.path;
+  logger.info({ ffprobePath }, "Using @ffprobe-installer/ffprobe");
+} catch (err) {
+  logger.warn(
+    "@ffprobe-installer/ffprobe not available, falling back to system ffprobe",
+  );
 }
 
 // Allow overriding via environment variables (optional)
@@ -36,7 +39,7 @@ if (config.ffprobePath) ffprobePath = config.ffprobePath;
 const execFileAsync = promisify(execFile);
 
 // ------------------------------------------------------------------
-// 2. Exported functions (unchanged logic)
+// 2. Exported functions
 // ------------------------------------------------------------------
 export async function getVideoDuration(filePath) {
   try {
