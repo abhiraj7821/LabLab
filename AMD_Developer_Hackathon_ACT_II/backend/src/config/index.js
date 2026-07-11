@@ -7,6 +7,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
+// In Vercel/serverless, we must use /tmp for writable storage
+const tempBase = process.env.NODE_ENV === "production" ? "/tmp" : process.cwd();
+
 const config = {
   // Server
   port: parseInt(process.env.PORT, 10) || 3000,
@@ -24,27 +27,11 @@ const config = {
     password: process.env.REDIS_PASSWORD || undefined,
   },
 
-  // Temporary directories – use /tmp in production (Vercel/cloud), ./temp locally
-  tempDir:
-    process.env.TEMP_DIR ||
-    (process.env.NODE_ENV === "production"
-      ? "/tmp"
-      : path.resolve(process.cwd(), "temp")),
-  uploadDir:
-    process.env.UPLOAD_DIR ||
-    (process.env.NODE_ENV === "production"
-      ? "/tmp/uploads"
-      : path.resolve(process.cwd(), "temp/uploads")),
-  audioDir:
-    process.env.AUDIO_DIR ||
-    (process.env.NODE_ENV === "production"
-      ? "/tmp/audio"
-      : path.resolve(process.cwd(), "temp/audio")),
-  framesDir:
-    process.env.FRAMES_DIR ||
-    (process.env.NODE_ENV === "production"
-      ? "/tmp/frames"
-      : path.resolve(process.cwd(), "temp/frames")),
+  // Temporary directories
+  tempDir: process.env.TEMP_DIR || path.resolve(tempBase, "temp"),
+  uploadDir: process.env.UPLOAD_DIR || path.resolve(tempBase, "temp/uploads"),
+  audioDir: process.env.AUDIO_DIR || path.resolve(tempBase, "temp/audio"),
+  framesDir: process.env.FRAMES_DIR || path.resolve(tempBase, "temp/frames"),
 
   // AI / LLM
   openaiApiKey: process.env.OPENAI_API_KEY,
@@ -52,14 +39,6 @@ const config = {
   groqApiKey: process.env.GROQ_API_KEY,
   geminiApiKey: process.env.GEMINI_API_KEY,
   fireworksApiKey: process.env.FIREWORKS_API_KEY,
-
-  // Vision model overrides (optional)
-  groqVisionModel: process.env.GROQ_VISION_MODEL,
-  anthropicVisionModel: process.env.ANTHROPIC_VISION_MODEL,
-  fireworksVisionModel: process.env.FIREWORKS_VISION_MODEL,
-
-  // Rate limiting
-  geminiRpmLimit: parseInt(process.env.GEMINI_RPM_LIMIT, 10) || 8,
 
   // Whisper
   whisperModelPath: process.env.WHISPER_MODEL_PATH || "",
@@ -69,7 +48,7 @@ const config = {
 
   // Rate limiter (ms window and max requests)
   rateLimit: {
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000, // 15 minutes
     max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
   },
 
@@ -77,7 +56,7 @@ const config = {
   corsOrigin: process.env.CORS_ORIGIN || "*",
 
   // Captioning limits
-  maxVideoDurationSeconds: 300,
+  maxVideoDurationSeconds: 300, // 5 minutes
   supportedVideoFormats: ["mp4", "avi", "mov", "mkv", "webm"],
 };
 
