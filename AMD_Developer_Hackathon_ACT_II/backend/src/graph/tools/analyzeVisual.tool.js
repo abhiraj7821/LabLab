@@ -11,11 +11,23 @@ import { AppError } from "../../utils/errors.js";
  * @param {string} imagePath - Path to the frame image
  * @returns {Promise<string>} Textual description
  */
+// export async function analyzeVisual(imagePath) {
+//   logger.info({ imagePath }, "Analyzing frame with Anthropic");
+
+//   try {
+//     const description = await analyzeImageWithAnthropic(imagePath);
+//     return description;
+//   } catch (error) {
+//     logger.error({ err: error, imagePath }, "Visual analysis failed");
+//     throw new AppError(`Visual analysis failed: ${error.message}`, 500);
+//   }
+// }
+
 export async function analyzeVisual(imagePath) {
-  logger.info({ imagePath }, "Analyzing frame with Anthropic");
+  logger.info({ imagePath }, "Analyzing frame with Gemini");
 
   try {
-    const description = await analyzeImageWithAnthropic(imagePath);
+    const description = await analyzeImageWithGemini(imagePath);
     return description;
   } catch (error) {
     logger.error({ err: error, imagePath }, "Visual analysis failed");
