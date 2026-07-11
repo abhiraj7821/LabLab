@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd \"AMD_Developer Hackathon_ACT_II/backend\" && npm install && npm run build",
-  "outputDirectory": "AMD_Developer Hackathon_ACT_II/backend/dist",
-  "installCommand": "cd \"AMD_Developer Hackathon_ACT_II/backend\" && npm install"
+  "buildCommand": " npm install && npm run build",
+  "outputDirectory": "/dist",
+  "installCommand": "npm install"
 }
